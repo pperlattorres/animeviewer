@@ -1,3 +1,5 @@
 cloudscraper
 lxml
 beautifulsoup4
+fastapi
+uvicorn
