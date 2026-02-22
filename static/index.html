@@ -655,9 +655,14 @@
   }
 
   /* ── Helpers ───────────────────────────────── */
-  const esc  = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const escA = s => String(s??'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  const parseErr = e => { try { return JSON.parse(e.message)?.detail ?? e.message; } catch { return e.message; } };
+  function esc(s)  { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function escA(s) { return String(s == null ? '' : s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function parseErr(e) {
+    try {
+      var parsed = JSON.parse(e.message);
+      return (parsed && parsed.detail) ? parsed.detail : e.message;
+    } catch(ex) { return e.message; }
+  }
   function announce(msg) {
     const el = document.getElementById('srAnnounce');
     el.textContent = '';
@@ -675,7 +680,7 @@
       el.classList.toggle('active', v === id);
     });
     document.getElementById('siteHeader').style.display = id === 'viewHome' ? 'none' : 'flex';
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch(e) { window.scrollTo(0, 0); }
   }
 
   function goHome() {
@@ -865,7 +870,7 @@
       const res = await fetch(`${API}/anime/${encodeURIComponent(state.animeId)}/episode/${ep}/servers?dubbed=${dubbed}`);
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      state.servers = data.flat();
+      state.servers = [].concat.apply([], data);
 
       if (!state.servers.length) {
         document.getElementById('serverBar').innerHTML =
