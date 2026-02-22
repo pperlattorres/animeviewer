@@ -86,6 +86,12 @@ class AnimeFLV(object):
         session = kwargs.get("session", None)
         self._scraper = cloudscraper.create_scraper(session)
 
+    @staticmethod
+    def _text(soup, selector: str) -> Optional[str]:
+        """Selecciona un elemento y retorna su texto. Retorna None si no existe."""
+        el = soup.select_one(selector)
+        return el.get_text(strip=True) if el else None
+
     def close(self) -> None:
         self._scraper.close()
 
@@ -182,8 +188,22 @@ class AnimeFLV(object):
         if params != "":
             url += f"?{params}"
 
-        response = self._scraper.get(url)
-        soup = BeautifulSoup(response.text, "lxml")
+        import time as _time
+        max_retries = 3
+        soup = None
+        for attempt in range(1, max_retries + 1):
+            response = self._scraper.get(url)
+            _soup = BeautifulSoup(response.text, "lxml")
+            # Validate that we got a real page (not a Cloudflare challenge)
+            if _soup.select_one("div.Container"):
+                soup = _soup
+                break
+            if attempt < max_retries:
+                _time.sleep(2 * attempt)  # 2s, 4s backoff
+        if soup is None:
+            raise AnimeFLVParseError(
+                f"Could not retrieve search results for '{query}' after {max_retries} attempts (Cloudflare?)"
+            )
 
         elements = soup.select("div.Container ul.ListAnimes li article")
 
@@ -283,35 +303,40 @@ class AnimeFLV(object):
         :param id: Anime id, like as 'nanatsu-no-taizai'.
         :rtype: dict
         """
-        response = self._scraper.get(f"{ANIME_URL}/{id}")
-        soup = BeautifulSoup(response.text, "lxml")
+        max_retries = 3
+        soup = None
 
-        synopsis = soup.select_one(
-                "body div div div div div main section div.Description p"
-            ).string
+        for attempt in range(1, max_retries + 1):
+            response = self._scraper.get(f"{ANIME_URL}/{id}")
+            soup = BeautifulSoup(response.text, "lxml")
+            # Verify we got the real page and not a Cloudflare challenge
+            if any("var anime_info = [" in str(s) for s in soup.find_all("script")):
+                break
+            if attempt < max_retries:
+                import time as _time
+                _time.sleep(2 * attempt)
+        else:
+            raise AnimeFLVParseError(
+                f"Could not retrieve anime page for '{id}' after {max_retries} attempts "
+                "(possible Cloudflare block — var anime_info not found in page scripts)"
+            )
+
+        poster_el = soup.select_one(
+            "body div div div div div aside div.AnimeCover div.Image figure img"
+        )
+        poster = BASE_URL + "/" + poster_el.get("src", "") if poster_el else None
 
         information = {
-            "title": soup.select_one(
-                "body div.Wrapper div.Body div div.Ficha.fchlt div.Container h1.Title"
-            ).string,
-            "poster": BASE_URL
-            + "/"
-            + soup.select_one(
-                "body div div div div div aside div.AnimeCover div.Image figure img"
-            ).get("src", ""),
-            "synopsis": synopsis.strip() if synopsis else None,
-            "rating": soup.select_one(
-                "body div div div.Ficha.fchlt div.Container div.vtshr div.Votes span#votes_prmd"
-            ).string,
-            "debut": soup.select_one(
-                "body div.Wrapper div.Body div div.Container div.BX.Row.BFluid.Sp20 aside.SidebarA.BFixed p.AnmStts"
-            ).string,
-            "type": soup.select_one(
-                "body div.Wrapper div.Body div div.Ficha.fchlt div.Container span.Type"
-            ).string,
+            "title": self._text(soup, "body div.Wrapper div.Body div div.Ficha.fchlt div.Container h1.Title"),
+            "poster": poster,
+            "synopsis": self._text(soup, "body div div div div div main section div.Description p"),
+            "rating": self._text(soup, "body div div div.Ficha.fchlt div.Container div.vtshr div.Votes span#votes_prmd"),
+            "debut": self._text(soup, "body div.Wrapper div.Body div div.Container div.BX.Row.BFluid.Sp20 aside.SidebarA.BFixed p.AnmStts"),
+            "type": self._text(soup, "body div.Wrapper div.Body div div.Ficha.fchlt div.Container span.Type"),
         }
         information["banner"] = (
             information["poster"].replace("covers", "banners").strip()
+            if information["poster"] else None
         )
         genres = []
 
