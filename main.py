@@ -45,7 +45,7 @@ for noisy in ("urllib3", "charset_normalizer", "cloudscraper", "httpx", "watchfi
     logging.getLogger(noisy).setLevel(logging.WARNING)
 
 # ── App ───────────────────────────────────────────────────────────────────────
-app = FastAPI(title="AnimeFLV Scraper API", version="0.1")
+app = FastAPI(title="JOANG Anime API", version="0.1")
 
 app.add_middleware(
     CORSMiddleware,

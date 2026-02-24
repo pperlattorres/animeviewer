@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d0d14" />
-  <title>AnimeFLV</title>
+  <title>JOANG Anime</title>
   <style>
     /* ── Reset & tokens ─────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -245,6 +245,69 @@
       .home-search-btn   { min-height: 80px; font-size: var(--fs-lg); border-radius: 20px; }
     }
 
+    /* ── History section ───────────────────────── */
+    .history-section {
+      width: 100%; margin-top: 8px;
+    }
+    .history-title {
+      font-size: var(--fs-xs); font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--muted); margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .history-clear {
+      background: none; border: none; color: var(--muted);
+      font-size: var(--fs-xs); cursor: pointer; padding: 4px 8px;
+      border-radius: var(--radius); transition: color .2s;
+      font-family: inherit;
+    }
+    .history-clear:hover { color: #f87171; }
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    .history-card {
+      position: relative; display: flex; flex-direction: column;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; text-align: left;
+      transition: transform .18s, border-color .2s, box-shadow .2s;
+      touch-action: manipulation;
+      font: inherit; color: inherit; width: 100%;
+    }
+    .history-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 28px rgba(124,106,247,.25);
+    }
+    .history-card-poster {
+      width: 100%; aspect-ratio: 2 / 3;
+      object-fit: cover; display: block;
+      background: var(--surface2);
+    }
+    .history-card-body {
+      padding: 8px 10px 10px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .history-card-title {
+      font-size: var(--fs-xs); font-weight: 700; line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .history-ep-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: .68rem; font-weight: 700;
+      color: var(--accent2); margin-top: 2px;
+    }
+    .history-ep-badge svg { flex-shrink: 0; }
+    @media (min-width: 1920px) {
+      .history-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
+    }
+    @media (max-width: 479px) {
+      .history-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+    }
+
     /* ═══════════════════════════════════════════
        RESULTS VIEW
     ═══════════════════════════════════════════ */
@@ -276,7 +339,7 @@
       display: flex; flex-direction: column;
       background: var(--surface); border: 1.5px solid var(--border);
       border-radius: var(--radius-lg); overflow: hidden;
-      cursor: pointer; text-align: left;
+      cursor: pointer; text-align: left; position: relative;
       transition: transform .18s, border-color .2s, box-shadow .2s;
       touch-action: manipulation;
       font: inherit; color: inherit; width: 100%;
@@ -300,6 +363,33 @@
       overflow: hidden; text-wrap: pretty;
     }
     .anime-card-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    /* Card wrapper + fav overlay */
+    .card-wrap { position: relative; }
+    .card-fav-btn {
+      position: absolute; top: 8px; right: 8px; z-index: 3;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(13,13,20,.72); backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(255,255,255,.15);
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .18s, background .18s, border-color .18s, transform .15s;
+      font: inherit; flex-shrink: 0;
+    }
+    .card-fav-btn:hover { color: #f87171; border-color: #f87171; transform: scale(1.12); }
+    .card-fav-btn.active { color: #f87171; background: rgba(248,113,113,.22); border-color: #f87171; }
+
+    /* Home fav button (next to Buscar) */
+    .home-fav-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      min-height: 52px; padding: 0 22px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); color: var(--text);
+      cursor: pointer; font: 700 var(--fs-base)/1 inherit;
+      transition: border-color .18s, color .18s; white-space: nowrap; flex-shrink: 0;
+    }
+    .home-fav-btn:hover { border-color: #f87171; color: #f87171; }
+    .home-fav-btn.has-favs { color: #f87171; border-color: rgba(248,113,113,.45); }
 
     @media (min-width: 1920px) {
       .results-container { padding: 0 64px; }
@@ -343,6 +433,34 @@
       background: var(--surface2);
     }
     .anime-hero-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+    .hero-resume-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .hero-resume-label { font-size: var(--fs-xs); color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+    .hero-resume-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--accent2); color: #fff;
+      border: none; border-radius: var(--radius); cursor: pointer;
+      font: 700 var(--fs-sm)/1 inherit;
+      padding: 8px 16px;
+      transition: opacity .18s, transform .15s;
+      white-space: nowrap;
+    }
+    .hero-resume-btn:hover { opacity: .85; transform: scale(1.03); }
+    .hero-resume-btn svg { flex-shrink: 0; }
+
+    /* Hero actions row (fav + resume) */
+    .hero-actions-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .hero-fav-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      background: var(--surface2); color: var(--text);
+      cursor: pointer; font: 700 var(--fs-sm)/1 inherit;
+      padding: 8px 16px; min-height: 36px;
+      transition: background .18s, border-color .18s, color .18s;
+    }
+    .hero-fav-btn:hover { border-color: #f87171; color: #f87171; }
+    .hero-fav-btn.active { background: rgba(248,113,113,.15); border-color: #f87171; color: #f87171; }
+    .hero-fav-btn svg { flex-shrink: 0; transition: fill .18s; }
     .anime-hero-title {
       font-size: clamp(1.35rem, 3.5vw, var(--fs-2xl));
       font-weight: 900; line-height: 1.15; text-wrap: balance;
@@ -454,6 +572,18 @@
     }
     .dubbed-toggle input { accent-color: var(--accent); width: 18px; height: 18px; cursor: pointer; }
 
+    /* Header fav button */
+    .header-fav-btn {
+      display: flex; align-items: center; justify-content: center;
+      min-width: var(--hit); min-height: var(--hit);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); border-radius: var(--radius);
+      transition: color .2s; flex-shrink: 0; font: inherit;
+      padding: 0 8px;
+    }
+    .header-fav-btn:hover { color: #f87171; }
+    .header-fav-btn.has-favs { color: #f87171; }
+
     /* ── Debug log panel ───────────────────── */
     .debug-panel {
       margin: 0 32px 32px;
@@ -491,6 +621,25 @@
     .log-warn { color: #fbbf24; }
     .log-err  { color: #f87171; }
     .log-info { color: #60a5fa; }
+
+    /* ── Favorites view ────────────────────── */
+    #viewFavs {
+      min-height: calc(100dvh - var(--header-h));
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .favs-empty {
+      width: 100%; text-align: center; padding: 80px 24px;
+      color: var(--muted); font-size: var(--fs-lg);
+    }
+    .favs-empty svg { display: block; margin: 0 auto 16px; opacity: .18; }
+    .favs-bar-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+    .btn-danger {
+      padding: 6px 14px; border-radius: var(--radius);
+      background: none; border: 1.5px solid rgba(248,113,113,.4);
+      color: #f87171; cursor: pointer; font: inherit; font-size: var(--fs-xs); font-weight: 700;
+      transition: background .18s, border-color .18s;
+    }
+    .btn-danger:hover { background: rgba(248,113,113,.12); border-color: #f87171; }
   </style>
 </head>
 <body>
@@ -501,8 +650,8 @@
      HEADER (oculto en home)
 ════════════════════════════════════════ -->
 <header class="site-header" id="siteHeader" style="display:none;" role="banner">
-  <button class="logo" type="button" onclick="goHome()" aria-label="AnimeFLV — Inicio">
-    Anime<span>FLV</span>
+  <button class="logo" type="button" onclick="goHome()" aria-label="JOANG Anime — Inicio">
+    JOANG<span> Anime</span>
   </button>
 
   <form class="header-search" role="search"
@@ -517,6 +666,14 @@
     <input type="checkbox" id="dubbedCheck" aria-label="Activar doblaje LAT" />
     LAT
   </label>
+
+  <button class="header-fav-btn" id="headerFavBtn" type="button"
+    onclick="showFavs()" aria-label="Mis favoritos">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  </button>
 </header>
 
 <!-- ════════════════════════════════════════
@@ -524,7 +681,7 @@
 ════════════════════════════════════════ -->
 <div id="viewHome" class="view active" role="main" id="main">
   <div class="home-content">
-    <h1 class="home-logo">Anime<span class="hl">FLV</span><span class="dot">.</span></h1>
+    <h1 class="home-logo">JOANG<span class="hl"> Anime</span><span class="dot">.</span></h1>
     <p class="home-tagline">Busca tu anime favorito y empieza a ver ahora</p>
 
     <form class="home-search-form" role="search"
@@ -534,7 +691,23 @@
         placeholder="Ej: Nanatsu no Taizai, Attack on Titan…"
         autocomplete="off" spellcheck="false" autofocus />
       <button class="home-search-btn" id="homeBtn" type="submit">Buscar</button>
+      <button class="home-fav-btn" id="homeFavBtn" type="button" onclick="showFavs()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        Favoritos
+      </button>
     </form>
+
+    <!-- Historial -->
+    <div class="history-section" id="historySection" style="display:none;">
+      <div class="history-title">
+        <span>Vistos recientemente</span>
+        <button class="history-clear" type="button" onclick="historyClear()" aria-label="Borrar historial">Borrar</button>
+      </div>
+      <div class="history-grid" id="historyGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -585,6 +758,24 @@
         <div class="anime-badges" id="animeBadges"></div>
         <p class="anime-synopsis" id="animeSynopsis"></p>
         <div class="anime-genres" id="animeGenres"></div>
+        <!-- acciones: favorito -->
+        <div class="hero-actions-row">
+          <button class="hero-fav-btn" id="heroFavBtn" type="button" onclick="favsToggleHero()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span id="heroFavLabel">Agregar a favoritos</span>
+          </button>
+        </div>
+        <!-- último episodio visto -->
+        <div class="hero-resume-row" id="heroLastEp" style="display:none;">
+          <span class="hero-resume-label">Último visto</span>
+          <button class="hero-resume-btn" id="heroResumeBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            Continuar — Cap. <span id="heroLastEpNum"></span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -621,11 +812,260 @@
 
 </div>
 
+<!-- ════════════════════════════════════════
+     VIEW: FAVORITOS
+════════════════════════════════════════ -->
+<div id="viewFavs" class="view" role="main">
+  <div class="results-container">
+    <div class="results-bar">
+      <h2>Mis favoritos</h2>
+      <div class="favs-bar-actions">
+        <span class="count" id="favsCount"></span>
+        <button class="btn-danger" type="button" onclick="favsClearAll()">Limpiar todo</button>
+      </div>
+    </div>
+    <div id="favsGrid" class="results-grid" role="list" aria-live="polite"></div>
+    <div id="favsEmpty" class="favs-empty" style="display:none;">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <p>Aún no tienes animes favoritos.<br>Busca un anime y agrégalo con el botón &#9829;</p>
+    </div>
+  </div>
+</div>
+
 <div id="srAnnounce" role="status" aria-live="polite" class="sr-only"></div>
 
 <script>
   const API = '';
   const state = { query:'', results:[], animeId:null, episode:null, servers:[] };
+  var _currentAnimeInfo = null; // cache for history
+
+  /* ── History (localStorage) ──────────────── */
+  var HISTORY_KEY = 'joang_history';
+  var HISTORY_MAX = 10;
+
+  function historyLoad() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+    catch(e) { return []; }
+  }
+
+  function historySave(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
+  }
+
+  // Add or move-to-front an anime. episode=null means don't override existing episode.
+  function historyPush(item) {
+    var list = historyLoad();
+    // Remove existing entry for same id
+    var filtered = [];
+    var existing = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === item.id) { existing = list[i]; }
+      else { filtered.push(list[i]); }
+    }
+    // Preserve existing episode if new item doesn't set one
+    var episode = (item.episode != null) ? item.episode : (existing ? existing.episode : null);
+    var entry = { id: item.id, title: item.title, poster: item.poster, type: item.type, rating: item.rating, episode: episode };
+    filtered.unshift(entry);
+    if (filtered.length > HISTORY_MAX) { filtered = filtered.slice(0, HISTORY_MAX); }
+    historySave(filtered);
+    historyRender();
+  }
+
+  function historyUpdateEpisode(id, episode) {
+    var list = historyLoad();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) { list[i].episode = episode; break; }
+    }
+    historySave(list);
+    historyRender();
+  }
+
+  function historyClear() {
+    historySave([]);
+    historyRender();
+  }
+
+  function historyRender() {
+    var list = historyLoad();
+    var section = document.getElementById('historySection');
+    var grid = document.getElementById('historyGrid');
+    if (!list.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    var html = '';
+    for (var i = 0; i < list.length; i++) {
+      var a = list[i];
+      var epBadge = a.episode != null
+        ? '<span class="history-ep-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Cap. ' + a.episode + '</span>'
+        : '';
+      html += '<button class="history-card" type="button"' +
+        ' aria-label="' + escA(a.title) + '"' +
+        ' onclick="historyOpen(\'' + escA(a.id) + '\', ' + (a.episode != null ? a.episode : 'null') + ')">' +
+        '<img class="history-card-poster" loading="lazy"' +
+        ' src="' + escA(a.poster || '') + '"' +
+        ' onerror="this.style.background=\'var(--surface3)\'; this.removeAttribute(\'src\')"' +
+        ' alt="' + escA(a.title) + '" width="120" height="180" />' +
+        '<div class="history-card-body">' +
+        '<div class="history-card-title">' + esc(a.title) + '</div>' +
+        epBadge +
+        '</div></button>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function historyOpen(id, episode) {
+    // Navigate to anime and optionally to specific episode
+    selectAnime(id, null, episode);
+  }
+
+  // Render history on load
+  historyRender();
+
+  /* ── Favorites (localStorage) ──────────────── */
+  var FAVS_KEY = 'joang_favs';
+
+  function favsLoad() {
+    try { return JSON.parse(localStorage.getItem(FAVS_KEY) || '[]'); }
+    catch(e) { return []; }
+  }
+
+  function favsSave(list) {
+    try { localStorage.setItem(FAVS_KEY, JSON.stringify(list)); } catch(e) {}
+  }
+
+  function favsHas(id) {
+    var list = favsLoad();
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) return true; }
+    return false;
+  }
+
+  function favsToggle(item) {
+    var list = favsLoad();
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === item.id) { idx = i; break; } }
+    if (idx >= 0) { list.splice(idx, 1); }
+    else { list.unshift({ id: item.id, title: item.title || '', poster: item.poster || '', type: item.type || '', rating: item.rating || '' }); }
+    favsSave(list);
+    favsUpdateHomeBtn();
+    return favsHas(item.id);
+  }
+
+  function favsClearAll() {
+    if (!window.confirm('¿Borrar todos los favoritos?')) return;
+    favsSave([]);
+    favsUpdateHomeBtn();
+    favsRender();
+  }
+
+  function favsUpdateHomeBtn() {
+    var has = favsLoad().length > 0;
+    var homeFavBtn   = document.getElementById('homeFavBtn');
+    var headerFavBtn = document.getElementById('headerFavBtn');
+    if (homeFavBtn)   homeFavBtn.classList.toggle('has-favs', has);
+    if (headerFavBtn) headerFavBtn.classList.toggle('has-favs', has);
+  }
+
+  // Toggle from a result/favs card fav button
+  function favsToggleCard(id, btn) {
+    var item = null;
+    for (var i = 0; i < state.results.length; i++) {
+      if (state.results[i].id === id) { item = state.results[i]; break; }
+    }
+    if (!item) {
+      var fl = favsLoad();
+      for (var j = 0; j < fl.length; j++) { if (fl[j].id === id) { item = fl[j]; break; } }
+    }
+    if (!item) { item = { id: id }; }
+    var isFav = favsToggle(item);
+    btn.classList.toggle('active', isFav);
+    btn.setAttribute('aria-label', isFav ? 'Quitar de favoritos' : 'Agregar a favoritos');
+    var svg = btn.querySelector('svg');
+    if (svg) { svg.setAttribute('fill', isFav ? 'currentColor' : 'none'); }
+    // Update hero button if this anime is currently open
+    if (state.animeId === id) { favsUpdateHeroBtn(isFav); }
+  }
+
+  // Toggle from hero fav button
+  function favsToggleHero() {
+    if (!state.animeId) return;
+    var item = { id: state.animeId, title: '', poster: '', type: '', rating: '' };
+    item.title  = document.getElementById('animeTitle').textContent || '';
+    item.poster = document.getElementById('animePoster').src || '';
+    if (_currentAnimeInfo) {
+      item.type   = _currentAnimeInfo.type   || '';
+      item.rating = _currentAnimeInfo.rating || '';
+    }
+    var isFav = favsToggle(item);
+    favsUpdateHeroBtn(isFav);
+    // Also update card fav button in results if visible
+    var cardFavBtn = document.querySelector('.card-fav-btn[data-anime-id="' + state.animeId + '"]');
+    if (cardFavBtn) {
+      cardFavBtn.classList.toggle('active', isFav);
+      var svg2 = cardFavBtn.querySelector('svg');
+      if (svg2) { svg2.setAttribute('fill', isFav ? 'currentColor' : 'none'); }
+    }
+  }
+
+  function favsUpdateHeroBtn(isFav) {
+    var btn   = document.getElementById('heroFavBtn');
+    var label = document.getElementById('heroFavLabel');
+    var svg   = btn ? btn.querySelector('svg') : null;
+    if (!btn) return;
+    btn.classList.toggle('active', isFav);
+    if (label) label.textContent = isFav ? 'En favoritos' : 'Agregar a favoritos';
+    if (svg)   svg.setAttribute('fill', isFav ? 'currentColor' : 'none');
+  }
+
+  function showFavs() {
+    showView('viewFavs');
+    favsRender();
+    announce('Mis favoritos');
+  }
+
+  function favsRender() {
+    var list  = favsLoad();
+    var grid  = document.getElementById('favsGrid');
+    var empty = document.getElementById('favsEmpty');
+    var count = document.getElementById('favsCount');
+    if (!list.length) {
+      if (grid)  grid.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      if (count) count.textContent = '';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (count) count.textContent = list.length + ' anime' + (list.length !== 1 ? 's' : '');
+    var html = '';
+    for (var i = 0; i < list.length; i++) {
+      var a = list[i];
+      html += '<div class="card-wrap">' +
+        '<button class="anime-card" type="button" role="listitem"' +
+        ' aria-label="' + escA(a.title) + '" data-id="' + escA(a.id) + '"' +
+        ' onclick="selectAnime(\'' + escA(a.id) + '\', this)">' +
+        '<img class="anime-card-poster" loading="lazy"' +
+        ' src="' + escA(a.poster || '') + '" alt="' + escA(a.title) + '" width="160" height="240"' +
+        ' onerror="this.style.background=\'var(--surface3)\'; this.removeAttribute(\'src\')" />' +
+        '<div class="anime-card-body">' +
+        '<div class="anime-card-title">' + esc(a.title) + '</div>' +
+        '<div class="anime-card-meta">' +
+        (a.type   ? '<span class="badge badge-accent">' + esc(a.type) + '</span>' : '') +
+        (a.rating ? '<span class="badge badge-star">&#9733; ' + esc(a.rating) + '</span>' : '') +
+        '</div></div></button>' +
+        '<button class="card-fav-btn active" type="button" data-anime-id="' + escA(a.id) + '"' +
+        ' aria-label="Quitar de favoritos"' +
+        ' onclick="event.stopPropagation(); favsToggleCard(\'' + escA(a.id) + '\', this); favsRender();">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"' +
+        ' stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+        '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+        '</svg></button></div>';
+    }
+    if (grid) grid.innerHTML = html;
+  }
+
+  // Init fav indicator on page load
+  favsUpdateHomeBtn();
 
   /* ── Debug log ─────────────────────────────── */
   let _logCount = 0;
@@ -671,7 +1111,7 @@
 
   /* ── Views ─────────────────────────────────── */
   // display values per view — must be set via style to beat CSS ID-selector specificity
-  const VIEW_DISPLAY = { viewHome: 'flex', viewResults: 'flex', viewAnime: 'block' };
+  const VIEW_DISPLAY = { viewHome: 'flex', viewResults: 'flex', viewAnime: 'block', viewFavs: 'flex' };
 
   function showView(id) {
     Object.keys(VIEW_DISPLAY).forEach(v => {
@@ -761,27 +1201,41 @@
       return;
     }
     count.textContent = `${animes.length} resultado${animes.length !== 1 ? 's' : ''}`;
-    document.getElementById('resultsGrid').innerHTML = animes.map(a => `
-      <button class="anime-card" type="button" role="listitem"
-        aria-label="${escA(a.title)}" data-id="${escA(a.id)}"
-        onclick="selectAnime('${escA(a.id)}', this)">
-        <img class="anime-card-poster" loading="lazy"
-          src="${escA(a.poster||'')}"
-          onerror="this.style.background='var(--surface3)'; this.removeAttribute('src')"
-          alt="${escA(a.title)}" width="160" height="240" />
-        <div class="anime-card-body">
-          <div class="anime-card-title">${esc(a.title)}</div>
-          <div class="anime-card-meta">
-            ${a.type   ? `<span class="badge badge-accent">${esc(a.type)}</span>` : ''}
-            ${a.rating ? `<span class="badge badge-star">&#9733; ${esc(a.rating)}</span>` : ''}
-            ${a.debut  ? `<span class="badge badge-surface">${esc(a.debut)}</span>` : ''}
-          </div>
-        </div>
-      </button>`).join('');
+    var html = '';
+    for (var ri = 0; ri < animes.length; ri++) {
+      var a = animes[ri];
+      var isFav = favsHas(a.id);
+      var heartFill = isFav ? 'currentColor' : 'none';
+      html += '<div class="card-wrap">' +
+        '<button class="anime-card" type="button" role="listitem"' +
+        ' aria-label="' + escA(a.title) + '" data-id="' + escA(a.id) + '"' +
+        ' onclick="selectAnime(\'' + escA(a.id) + '\', this)">' +
+        '<img class="anime-card-poster" loading="lazy"' +
+        ' src="' + escA(a.poster || '') + '"' +
+        ' onerror="this.style.background=\'var(--surface3)\'; this.removeAttribute(\'src\')"' +
+        ' alt="' + escA(a.title) + '" width="160" height="240" />' +
+        '<div class="anime-card-body">' +
+        '<div class="anime-card-title">' + esc(a.title) + '</div>' +
+        '<div class="anime-card-meta">' +
+        (a.type   ? '<span class="badge badge-accent">' + esc(a.type) + '</span>' : '') +
+        (a.rating ? '<span class="badge badge-star">&#9733; ' + esc(a.rating) + '</span>' : '') +
+        (a.debut  ? '<span class="badge badge-surface">' + esc(a.debut) + '</span>' : '') +
+        '</div></div></button>' +
+        '<button class="card-fav-btn' + (isFav ? ' active' : '') + '" type="button"' +
+        ' data-anime-id="' + escA(a.id) + '"' +
+        ' aria-label="' + (isFav ? 'Quitar de favoritos' : 'Agregar a favoritos') + '"' +
+        ' onclick="event.stopPropagation(); favsToggleCard(\'' + escA(a.id) + '\', this)">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + heartFill + '"' +
+        ' stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+        '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+        '</svg></button></div>';
+    }
+    document.getElementById('resultsGrid').innerHTML = html;
   }
 
   /* ── Anime detail ──────────────────────────── */
-  async function selectAnime(id, el) {
+  async function selectAnime(id, el, targetEp) {
+    targetEp = targetEp != null ? targetEp : null;
     document.querySelectorAll('.anime-card').forEach(c => c.classList.remove('active'));
     if (el) el.classList.add('active');
 
@@ -806,9 +1260,17 @@
       const res = await fetch(`${API}/anime/${encodeURIComponent(id)}`);
       if (!res.ok) throw new Error(await res.text());
       const info = await res.json();
+      _currentAnimeInfo = info;
       renderHero(info);
       renderEpGrid(info.episodes || []);
+      // Save to history (without episode — will be updated when one plays)
+      historyPush({ id: id, title: info.title || '', poster: info.poster || '', type: info.type || '', rating: info.rating || '', episode: null });
       announce(`${info.title} — ${(info.episodes||[]).length} episodios`);
+      // If coming from history with a target episode, scroll to it
+      if (targetEp != null) {
+        var btn = document.querySelector('.ep-btn[aria-label="Episodio ' + targetEp + '"]');
+        if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.focus(); }
+      }
     } catch(e) {
       document.getElementById('animeTitle').textContent = 'Error al cargar el anime';
       document.getElementById('epGrid').innerHTML = `<div class="error-box" role="alert">${esc(parseErr(e))}</div>`;
@@ -830,6 +1292,28 @@
     ].join('');
     document.getElementById('animeGenres').innerHTML = (info.genres||[])
       .map(g => `<span class="badge badge-surface">${esc(g)}</span>`).join('');
+
+    // Show last watched episode if present in history
+    var hlist = historyLoad();
+    var histEntry = null;
+    for (var i = 0; i < hlist.length; i++) {
+      if (hlist[i].id === state.animeId) { histEntry = hlist[i]; break; }
+    }
+    var heroLastEp = document.getElementById('heroLastEp');
+    if (histEntry && histEntry.episode != null) {
+      document.getElementById('heroLastEpNum').textContent = histEntry.episode;
+      var resumeEp = histEntry.episode;
+      document.getElementById('heroResumeBtn').onclick = function() {
+        var btn = document.querySelector('.ep-btn[aria-label="Episodio ' + resumeEp + '"]');
+        if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        selectEpisode(resumeEp, btn || document.querySelector('.ep-btn'));
+      };
+      heroLastEp.style.display = 'flex';
+    } else {
+      heroLastEp.style.display = 'none';
+    }
+    // Sync hero fav button
+    favsUpdateHeroBtn(favsHas(state.animeId));
   }
 
   function renderEpGrid(episodes) {
@@ -882,6 +1366,22 @@
 
       renderServerBar(state.servers);
       loadServer(state.servers[0]);
+      // Update last watched episode in history
+      historyUpdateEpisode(state.animeId, ep);
+      // Update hero indicator live
+      (function(resumeEp) {
+        var heroLastEp = document.getElementById('heroLastEp');
+        var heroNum    = document.getElementById('heroLastEpNum');
+        if (heroLastEp && heroNum) {
+          heroNum.textContent = resumeEp;
+          document.getElementById('heroResumeBtn').onclick = function() {
+            var btn = document.querySelector('.ep-btn[aria-label="Episodio ' + resumeEp + '"]');
+            if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            selectEpisode(resumeEp, btn || document.querySelector('.ep-btn'));
+          };
+          heroLastEp.style.display = 'flex';
+        }
+      }(ep));
       announce(`${state.servers.length} servidores — reproduciendo en ${state.servers[0].title||'Servidor 1'}`);
     } catch(e) {
       document.getElementById('serverBar').innerHTML =
