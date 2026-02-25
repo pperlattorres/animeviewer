@@ -383,11 +383,24 @@ class AnimeFLV(object):
             **information,
         )
 
+    @staticmethod
+    def _abs(url: Optional[str]) -> Optional[str]:
+        """Make a relative URL absolute using BASE_URL."""
+        if url and url.startswith("/"):
+            return BASE_URL + url
+        return url
+
     def _process_anime_list_info(self, elements: ResultSet) -> List[AnimeInfo]:
         ret = []
 
         for element in elements:
             try:
+                img_el = element.select_one("a div.Image figure img")
+                raw_src = (
+                    img_el.get("src", None) or img_el.get("data-cfsrc", None)
+                ) if img_el else None
+                poster = self._abs(raw_src)
+                banner = self._abs(raw_src.replace("covers", "banners").strip()) if raw_src else None
                 ret.append(
                     AnimeInfo(
                         id=removeprefix(
@@ -395,20 +408,8 @@ class AnimeFLV(object):
                             "anime/",
                         ),
                         title=element.select_one("a h3").string,
-                        poster=(
-                            element.select_one("a div.Image figure img").get(
-                                "src", None
-                            )
-                            or element.select_one("a div.Image figure img")["data-cfsrc"]
-                        ),
-                        banner=(
-                            element.select_one("a div.Image figure img").get(
-                                "src", None
-                            )
-                            or element.select_one("a div.Image figure img")["data-cfsrc"]
-                        )
-                        .replace("covers", "banners")
-                        .strip(),
+                        poster=poster,
+                        banner=banner,
                         type=element.select_one("div.Description p span.Type").string,
                         synopsis=(
                             element.select("div.Description p")[1].string.strip()

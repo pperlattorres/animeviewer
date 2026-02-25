@@ -179,6 +179,32 @@ async def get_video_servers(anime_id: str, episode: int, dubbed: bool = False):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/latest/episodes")
+async def get_latest_episodes():
+    scraper_log.info("[CALL] get_latest_episodes")
+    try:
+        with AnimeFLV() as client:
+            items = client.get_latest_episodes()
+        _log_scraper_result("get_latest_episodes", items)
+        return serialize(items)
+    except Exception as e:
+        scraper_log.error("[ERROR] get_latest_episodes\n%s", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/latest/animes")
+async def get_latest_animes():
+    scraper_log.info("[CALL] get_latest_animes")
+    try:
+        with AnimeFLV() as client:
+            items = client.get_latest_animes()
+        _log_scraper_result("get_latest_animes", items)
+        return serialize(items)
+    except Exception as e:
+        scraper_log.error("[ERROR] get_latest_animes\n%s", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── Punto de arranque ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

@@ -193,7 +193,7 @@
       position: relative; z-index: 1;
       display: flex; flex-direction: column;
       align-items: center; gap: 28px;
-      width: 100%; max-width: 680px;
+      width: 100%; max-width: 1100px;
     }
     .home-logo {
       font-size: clamp(2.4rem, 8vw, var(--fs-3xl));
@@ -208,7 +208,7 @@
       margin-top: -16px;
     }
     .home-search-form {
-      width: 100%;
+      width: 100%; max-width: 680px;
       display: flex; gap: 10px;
     }
     .home-search-input {
@@ -245,11 +245,13 @@
       .home-search-btn   { min-height: 80px; font-size: var(--fs-lg); border-radius: 20px; }
     }
 
-    /* ── History section ───────────────────────── */
-    .history-section {
+    /* ── Home sections (history / latest eps / latest animes) ── */
+    .history-section,
+    .latest-section {
       width: 100%; margin-top: 8px;
     }
-    .history-title {
+    .history-title,
+    .latest-section-title {
       font-size: var(--fs-xs); font-weight: 700;
       text-transform: uppercase; letter-spacing: .1em;
       color: var(--muted); margin-bottom: 14px;
@@ -262,50 +264,100 @@
       font-family: inherit;
     }
     .history-clear:hover { color: #f87171; }
-    .history-grid {
+
+    /* shared grid for all 3 home sections */
+    .history-grid,
+    .latest-scroll {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
       gap: 12px;
     }
-    .history-card {
+
+    /* shared card base */
+    .history-card,
+    .latest-ep-card,
+    .latest-anime-card {
       position: relative; display: flex; flex-direction: column;
+      width: 100%;
       background: var(--surface); border: 1.5px solid var(--border);
       border-radius: var(--radius); overflow: hidden;
       cursor: pointer; text-align: left;
       transition: transform .18s, border-color .2s, box-shadow .2s;
       touch-action: manipulation;
-      font: inherit; color: inherit; width: 100%;
+      font: inherit; color: inherit;
     }
-    .history-card:hover {
+    .history-card:hover,
+    .latest-ep-card:hover,
+    .latest-anime-card:hover {
       transform: translateY(-4px);
       border-color: var(--accent);
       box-shadow: 0 8px 28px rgba(124,106,247,.25);
     }
-    .history-card-poster {
+
+    /* poster / thumb images — all 2:3 portrait */
+    .history-card-poster,
+    .latest-ep-thumb,
+    .latest-anime-poster {
       width: 100%; aspect-ratio: 2 / 3;
       object-fit: cover; display: block;
       background: var(--surface2);
     }
-    .history-card-body {
+
+    /* card bodies */
+    .history-card-body,
+    .latest-ep-body,
+    .latest-anime-body {
       padding: 8px 10px 10px;
       display: flex; flex-direction: column; gap: 4px;
     }
-    .history-card-title {
+
+    /* titles inside cards */
+    .history-card-title,
+    .latest-ep-title,
+    .latest-anime-title {
       font-size: var(--fs-xs); font-weight: 700; line-height: 1.3;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .history-ep-badge {
+
+    /* episode / type badges */
+    .history-ep-badge,
+    .latest-ep-badge {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: .68rem; font-weight: 700;
       color: var(--accent2); margin-top: 2px;
     }
     .history-ep-badge svg { flex-shrink: 0; }
+
+    .latest-loading {
+      font-size: var(--fs-xs); color: var(--muted); padding: 8px 0;
+      grid-column: 1 / -1;
+    }
+    .latest-error {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+    }
+    .latest-error-msg {
+      font-size: var(--fs-xs); color: var(--muted);
+    }
+    .latest-retry-btn {
+      font-size: var(--fs-xs); font-weight: 700;
+      padding: 5px 14px; border-radius: var(--radius);
+      background: var(--surface2); border: 1.5px solid var(--border);
+      color: var(--text); cursor: pointer; font-family: inherit;
+      transition: border-color .2s, background .2s;
+      touch-action: manipulation;
+    }
+    .latest-retry-btn:hover { border-color: var(--accent); background: var(--surface); }
+
     @media (min-width: 1920px) {
-      .history-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
+      .history-grid,
+      .latest-scroll { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; }
     }
     @media (max-width: 479px) {
-      .history-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+      .history-grid,
+      .latest-scroll { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
     }
 
     /* ═══════════════════════════════════════════
@@ -499,12 +551,51 @@
       font-size: var(--fs-sm); font-weight: 700;
       font-variant-numeric: tabular-nums;
       background: var(--surface2); border: 1.5px solid var(--border);
-      color: var(--text); cursor: pointer;
+      color: var(--text); cursor: pointer; position: relative; overflow: hidden;
       transition: background .15s, border-color .15s, color .15s, transform .1s;
       touch-action: manipulation;
     }
     .ep-btn:hover  { background: var(--surface3); border-color: var(--accent); color: var(--accent2); }
     .ep-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(1.05); }
+    .ep-btn.has-progress { border-color: rgba(167,139,250,.5); }
+    .ep-btn-progress {
+      position: absolute; bottom: 0; left: 0; height: 3px;
+      background: var(--accent2); border-radius: 0 2px 0 0;
+      pointer-events: none; transition: width .4s;
+    }
+    .ep-btn.active .ep-btn-progress { background: rgba(255,255,255,.6); }
+
+    /* ── Progress toast ───────────────────── */
+    .progress-toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      background: var(--surface2); border: 1px solid var(--accent);
+      border-radius: var(--radius-lg); padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.55);
+      max-width: min(480px, calc(100vw - 32px));
+      animation: toastIn .22s ease-out;
+      transition: opacity .22s, transform .22s;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .toast-msg { font-size: var(--fs-sm); font-weight: 600; flex: 1; line-height: 1.4; }
+    .toast-msg strong { color: var(--accent2); }
+    .toast-progress-bar-wrap {
+      width: 100%; height: 4px; background: var(--surface3);
+      border-radius: 4px; margin-top: 7px; overflow: hidden;
+    }
+    .toast-progress-bar { height: 100%; background: var(--accent2); border-radius: 4px; transition: width .4s; }
+    .toast-close {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font: inherit; font-size: 1rem; line-height: 1;
+      padding: 4px; border-radius: var(--radius); transition: color .15s;
+      flex-shrink: 0;
+    }
+    .toast-close:hover { color: var(--text); }
 
     @media (min-width: 1920px) {
       .episodes-section { padding: 40px 64px 32px; }
@@ -546,6 +637,14 @@
     }
     .server-btn:hover  { background: var(--surface); border-color: var(--accent); color: var(--accent2); }
     .server-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Episode wall-clock timer */
+    .ep-timer {
+      font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+      color: var(--accent2); font-weight: 700; letter-spacing: .04em;
+      background: rgba(167,139,250,.12); border-radius: 6px;
+      padding: 2px 8px; margin-left: 8px;
+    }
     .player-body {
       width: 100%; aspect-ratio: 16 / 9;
       background: #000; display: flex; align-items: center; justify-content: center;
@@ -707,6 +806,18 @@
         <button class="history-clear" type="button" onclick="historyClear()" aria-label="Borrar historial">Borrar</button>
       </div>
       <div class="history-grid" id="historyGrid"></div>
+    </div>
+
+    <!-- Últimos episodios -->
+    <div class="latest-section" id="latestEpSection" style="display:none;">
+      <div class="latest-section-title">Últimos episodios</div>
+      <div class="latest-scroll" id="latestEpGrid"></div>
+    </div>
+
+    <!-- Últimos animes -->
+    <div class="latest-section" id="latestAnimeSection" style="display:none;">
+      <div class="latest-section-title">Últimos animes</div>
+      <div class="latest-scroll" id="latestAnimeGrid"></div>
     </div>
   </div>
 </div>
@@ -923,6 +1034,120 @@
   // Render history on load
   historyRender();
 
+  /* ── Latest episodes / animes ───────────────── */
+  function _slugToTitle(slug) {
+    return (slug || '').replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+  }
+
+  function renderLatestEpisodes(items) {
+    var section = document.getElementById('latestEpSection');
+    var grid = document.getElementById('latestEpGrid');
+    if (!items || !items.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var title = _slugToTitle(item.anime || '');
+      html += '<button class="latest-ep-card" type="button"' +
+        ' aria-label="' + escA(title) + ' \u2013 Episodio ' + esc(String(item.id)) + '"' +
+        ' onclick="selectAnime(\'' + escA(item.anime) + '\', null, ' + Number(item.id) + ')">' +
+        '<img class="latest-ep-thumb" loading="lazy"' +
+        ' src="' + escA(item.image_preview || '') + '"' +
+        ' onerror="this.style.background=\'var(--surface3)\'; this.removeAttribute(\'src\')"' +
+        ' alt="" width="160" height="90" />' +
+        '<div class="latest-ep-body">' +
+        '<div class="latest-ep-title">' + esc(title) + '</div>' +
+        '<div class="latest-ep-badge">Episodio ' + esc(String(item.id)) + '</div>' +
+        '</div></button>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderLatestAnimes(items) {
+    var section = document.getElementById('latestAnimeSection');
+    var grid = document.getElementById('latestAnimeGrid');
+    if (!items || !items.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      html += '<button class="latest-anime-card" type="button"' +
+        ' aria-label="' + escA(item.title || '') + '"' +
+        ' onclick="selectAnime(\'' + escA(item.id) + '\', null)">' +
+        '<img class="latest-anime-poster" loading="lazy"' +
+        ' src="' + escA(item.poster || '') + '"' +
+        ' onerror="this.style.background=\'var(--surface3)\'; this.removeAttribute(\'src\')"' +
+        ' alt="' + escA(item.title || '') + '" width="112" height="168" />' +
+        '<div class="latest-anime-body">' +
+        '<div class="latest-anime-title">' + esc(item.title || '') + '</div>' +
+        '</div></button>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function _latestShowError(gridEl, retryFn) {
+    gridEl.innerHTML =
+      '<div class="latest-error">' +
+      '<span class="latest-error-msg">No se pudo cargar el contenido.</span>' +
+      '<button class="latest-retry-btn" type="button" onclick="(' + retryFn + ')()">' +
+      '&#8635; Reintentar</button>' +
+      '</div>';
+  }
+
+  function fetchLatestEpisodes() {
+    var section = document.getElementById('latestEpSection');
+    var grid = section.querySelector('.latest-scroll');
+    section.style.display = 'block';
+    grid.innerHTML = '<span class="latest-loading">Cargando\u2026</span>';
+    dbgLog('INFO', '[latest/episodes] Iniciando fetch');
+    fetch(API + '/latest/episodes')
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(items) {
+        if (!items || !items.length) throw new Error('0 resultados');
+        dbgLog('OK', '[latest/episodes] ' + items.length + ' episodios recibidos');
+        renderLatestEpisodes(items);
+      })
+      .catch(function(err) {
+        dbgLog('ERR', '[latest/episodes] ' + (err && err.message ? err.message : 'Error desconocido'));
+        _latestShowError(grid, 'fetchLatestEpisodes');
+      });
+  }
+
+  function fetchLatestAnimes() {
+    var section = document.getElementById('latestAnimeSection');
+    var grid = section.querySelector('.latest-scroll');
+    section.style.display = 'block';
+    grid.innerHTML = '<span class="latest-loading">Cargando\u2026</span>';
+    dbgLog('INFO', '[latest/animes] Iniciando fetch');
+    fetch(API + '/latest/animes')
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(items) {
+        if (!items || !items.length) throw new Error('0 resultados');
+        dbgLog('OK', '[latest/animes] ' + items.length + ' animes recibidos');
+        renderLatestAnimes(items);
+      })
+      .catch(function(err) {
+        dbgLog('ERR', '[latest/animes] ' + (err && err.message ? err.message : 'Error desconocido'));
+        _latestShowError(grid, 'fetchLatestAnimes');
+      });
+  }
+
+  function loadLatest() {
+    // setTimeout defers until after full script eval (avoids let TDZ on _logCount)
+    setTimeout(function() {
+      fetchLatestEpisodes();
+      fetchLatestAnimes();
+    }, 0);
+  }
+
+  loadLatest();
+
   /* ── Favorites (localStorage) ──────────────── */
   var FAVS_KEY = 'joang_favs';
 
@@ -1067,6 +1292,210 @@
   // Init fav indicator on page load
   favsUpdateHomeBtn();
 
+  /* ── Playback Progress (wall-clock timer + postMessage override) ── */
+  var PROG_KEY = 'joang_progress';
+  var _progSaveTimer = null;
+
+  // Wall-clock timer state
+  var _epTimerInterval = null;
+  var _epTimerBase     = 0;     // seconds already counted at last (re)start
+  var _epTimerWall     = 0;     // Date.now() at last start/resume
+  var _epTimerRunning  = false;
+  var _epTimerSaveTick = 0;
+
+  function epTimerCurrent() {
+    if (!_epTimerRunning) return _epTimerBase;
+    return _epTimerBase + Math.floor((Date.now() - _epTimerWall) / 1000);
+  }
+
+  function epTimerStop() {
+    if (_epTimerInterval) { clearInterval(_epTimerInterval); _epTimerInterval = null; }
+    _epTimerRunning = false;
+    var el = document.getElementById('epTimer');
+    if (el) el.textContent = '';
+  }
+
+  function epTimerPause() {
+    if (!_epTimerRunning) return;
+    _epTimerBase = epTimerCurrent();
+    if (_epTimerInterval) { clearInterval(_epTimerInterval); _epTimerInterval = null; }
+    _epTimerRunning = false;
+  }
+
+  function epTimerResume() {
+    if (_epTimerRunning) return;
+    _epTimerWall    = Date.now();
+    _epTimerRunning = true;
+    _epTimerInterval = setInterval(epTimerTick, 1000);
+  }
+
+  function epTimerBegin(savedSec) {
+    epTimerStop();
+    _epTimerBase     = savedSec || 0;
+    _epTimerSaveTick = 0;
+    epTimerResume();
+  }
+
+  function epTimerSyncFromPlayer(seconds) {
+    // Called when postMessage gives us accurate video time; use it as new base
+    _epTimerBase    = seconds;
+    _epTimerWall    = Date.now();
+    // no need to restart interval, it's already running
+  }
+
+  function epTimerTick() {
+    if (!state.animeId || state.episode == null) return;
+    var cur = epTimerCurrent();
+    var el = document.getElementById('epTimer');
+    if (el) el.textContent = formatTime(cur);
+    _epTimerSaveTick++;
+    if (_epTimerSaveTick % 30 === 0) {
+      progSave(state.animeId, state.episode, cur, 0);
+      progressUpdateEpGrid();
+    }
+  }
+
+  // Pause timer when tab is hidden, resume when shown
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) { epTimerPause(); }
+    else if (_epTimerInterval === null && state.animeId && state.episode != null) { epTimerResume(); }
+  });
+
+  function progStoreKey(animeId, ep) { return animeId + '::' + ep; }
+
+  function progLoad() {
+    try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); }
+    catch(e) { return {}; }
+  }
+
+  function progGet(animeId, ep) {
+    var store = progLoad();
+    return store[progStoreKey(animeId, ep)] || null;
+  }
+
+  function progSave(animeId, ep, seconds, duration) {
+    var store = progLoad();
+    var key = progStoreKey(animeId, ep);
+    var existing = store[key] || {};
+    store[key] = {
+      s: Math.floor(seconds),
+      d: (duration > 0 ? Math.floor(duration) : (existing.d || 0)),
+      t: Date.now()
+    };
+    try { localStorage.setItem(PROG_KEY, JSON.stringify(store)); } catch(e) {}
+  }
+
+  function progSaveDebounced(animeId, ep, seconds, duration) {
+    if (_progSaveTimer) clearTimeout(_progSaveTimer);
+    _progSaveTimer = setTimeout(function() {
+      progSave(animeId, ep, seconds, duration);
+      progressUpdateEpGrid();
+    }, 3000);
+  }
+
+  function formatTime(s) {
+    s = Math.floor(s || 0);
+    var m = Math.floor(s / 60);
+    var sec = s % 60;
+    return m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+
+  function progressUpdateEpGrid() {
+    if (!state.animeId) return;
+    document.querySelectorAll('.ep-btn').forEach(function(btn) {
+      var label = btn.getAttribute('aria-label') || '';
+      var match = label.match(/Episodio (\d+)/);
+      if (!match) return;
+      var ep = parseInt(match[1]);
+      var prog = progGet(state.animeId, ep);
+      var oldBar = btn.querySelector('.ep-btn-progress');
+      if (oldBar) oldBar.parentNode.removeChild(oldBar);
+      if (!prog || prog.s < 3) return;
+      btn.classList.add('has-progress');
+      var bar = document.createElement('span');
+      bar.className = 'ep-btn-progress';
+      var pct = (prog.d > 0) ? Math.min(100, Math.round(prog.s / prog.d * 100)) : 25;
+      bar.style.width = pct + '%';
+      btn.title = 'Visto hasta ' + formatTime(prog.s) + (prog.d > 0 ? ' / ' + formatTime(prog.d) : '');
+      btn.appendChild(bar);
+    });
+  }
+
+  // Catch time events from cross-origin iframe players via postMessage
+  // Compatible with: JWPlayer, Plyr, Video.js and generic HTML5 player wrappers
+  window.addEventListener('message', function(evt) {
+    if (!state.animeId || state.episode === null) return;
+    var data = evt.data;
+    if (typeof data === 'string') {
+      if (data.indexOf('{') === -1) return;
+      try { data = JSON.parse(data); } catch(e) { return; }
+    }
+    if (!data || typeof data !== 'object') return;
+    var seconds = null;
+    var duration = 0;
+    // JWPlayer: { event:'time', position:x, duration:y }
+    if (data.event === 'time' && typeof data.position === 'number') {
+      seconds = data.position; duration = data.duration || 0;
+    }
+    // Plyr: { source:'plyr', event:'timeupdate', value:x }
+    else if (data.source === 'plyr' && data.event === 'timeupdate' && typeof data.value === 'number') {
+      seconds = data.value;
+    }
+    // Video.js / generic: { event|type:'timeupdate', currentTime:x }
+    else if ((data.event === 'timeupdate' || data.type === 'timeupdate') && typeof data.currentTime === 'number') {
+      seconds = data.currentTime; duration = data.duration || 0;
+    }
+    // Generic loose formats
+    else if (typeof data.currentTime === 'number' && data.currentTime > 0) {
+      seconds = data.currentTime; duration = data.duration || 0;
+    }
+    else if (typeof data.position === 'number' && data.position > 0) {
+      seconds = data.position; duration = data.duration || 0;
+    }
+    else if (typeof data.time === 'number' && data.time > 0) {
+      seconds = data.time; duration = data.total || data.duration || 0;
+    }
+    if (seconds !== null && seconds > 3) {
+      // Sync wall-clock base to accurate player time
+      epTimerSyncFromPlayer(seconds);
+      progSaveDebounced(state.animeId, state.episode, seconds, duration);
+    }
+  });
+
+
+  var _toastTimer = null;
+
+  function progressShowToast(seconds, duration) {
+    var existing = document.getElementById('progressToast');
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    if (_toastTimer) clearTimeout(_toastTimer);
+    var pct = (duration > 0) ? Math.min(100, Math.round(seconds / duration * 100)) : 0;
+    var pctStr = pct > 0 ? pct + '% visto' : formatTime(seconds) + ' registrados';
+    var pctBar = pct > 0
+      ? '<div class="toast-progress-bar-wrap"><div class="toast-progress-bar" style="width:' + pct + '%"></div></div>'
+      : '';
+    var toast = document.createElement('div');
+    toast.id = 'progressToast';
+    toast.className = 'progress-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+      '<div style="flex:1"><div class="toast-msg"><strong>' + pctStr + '</strong> en este episodio</div>' + pctBar + '</div>' +
+      '<button class="toast-close" type="button" aria-label="Cerrar" onclick="progressToastClose()">\u2715</button>';
+    document.body.appendChild(toast);
+    _toastTimer = setTimeout(progressToastClose, 6000);
+  }
+
+  function progressToastClose() {
+    var t = document.getElementById('progressToast');
+    if (t) {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(14px)';
+      setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
+    }
+    if (_toastTimer) clearTimeout(_toastTimer);
+  }
+
   /* ── Debug log ─────────────────────────────── */
   let _logCount = 0;
   function dbgLog(level, msg) {
@@ -1112,8 +1541,10 @@
   /* ── Views ─────────────────────────────────── */
   // display values per view — must be set via style to beat CSS ID-selector specificity
   const VIEW_DISPLAY = { viewHome: 'flex', viewResults: 'flex', viewAnime: 'block', viewFavs: 'flex' };
+  var _currentView = 'viewHome';
 
   function showView(id) {
+    _currentView = id;
     Object.keys(VIEW_DISPLAY).forEach(v => {
       const el = document.getElementById(v);
       el.style.display = v === id ? VIEW_DISPLAY[v] : 'none';
@@ -1129,11 +1560,13 @@
   }
 
   function goBack() {
-    showView('viewResults');
-    requestAnimationFrame(() => {
-      const active = document.querySelector('.anime-card.active');
-      if (active) active.focus();
-    });
+    showView(_backView || 'viewHome');
+    if ((_backView || 'viewHome') === 'viewResults') {
+      requestAnimationFrame(() => {
+        const active = document.querySelector('.anime-card.active');
+        if (active) active.focus();
+      });
+    }
   }
 
   /* ── Search ────────────────────────────────── */
@@ -1234,7 +1667,12 @@
   }
 
   /* ── Anime detail ──────────────────────────── */
+  var _backView = 'viewHome';
+
   async function selectAnime(id, el, targetEp) {
+    // Remember which view we came from so goBack() returns to the right place
+    _backView = _currentView !== 'viewAnime' ? _currentView : _backView;
+
     targetEp = targetEp != null ? targetEp : null;
     document.querySelectorAll('.anime-card').forEach(c => c.classList.remove('active'));
     if (el) el.classList.add('active');
@@ -1330,6 +1768,8 @@
         aria-label="Episodio ${Number(ep.id)}" aria-pressed="false"
         onclick="selectEpisode(${Number(ep.id)}, this)">${ep.id}</button>
     `).join('');
+    // Draw progress bars after DOM is ready
+    requestAnimationFrame(progressUpdateEpGrid);
   }
 
   /* ── Episode & servers ─────────────────────── */
@@ -1343,7 +1783,7 @@
     const pSection = document.getElementById('playerSection');
     pSection.style.display = 'block';
     document.getElementById('playerLabel').innerHTML =
-      `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Episodio ${ep}`;
+      `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Episodio ${ep}<span id="epTimer" class="ep-timer"></span>`;
     document.getElementById('serverBar').innerHTML =
       `<span class="server-label">Servidores</span>&nbsp;<span class="spinner" aria-hidden="true"></span>`;
     setPlayerBody('<div class="player-placeholder"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Cargando…</div>');
@@ -1368,6 +1808,13 @@
       loadServer(state.servers[0]);
       // Update last watched episode in history
       historyUpdateEpisode(state.animeId, ep);
+      // Show progress toast if there's saved progress for this episode
+      (function(aId, epNum) {
+        var prog = progGet(aId, epNum);
+        if (prog && prog.s > 10) {
+          setTimeout(function() { progressShowToast(prog.s, prog.d || 0); }, 1800);
+        }
+      }(state.animeId, ep));
       // Update hero indicator live
       (function(resumeEp) {
         var heroLastEp = document.getElementById('heroLastEp');
@@ -1412,6 +1859,10 @@
   function loadServer(s) {
     const src = s.code || s.url || '';
     if (!src) { setPlayerBody('<div class="player-placeholder">No se pudo obtener la URL del servidor.</div>'); return; }
+    if (_progSaveTimer) { clearTimeout(_progSaveTimer); _progSaveTimer = null; }
+    // Start wall-clock timer from saved position (if any)
+    var savedProg = (state.animeId && state.episode != null) ? progGet(state.animeId, state.episode) : null;
+    epTimerBegin(savedProg ? savedProg.s : 0);
     setPlayerBody(`<iframe src="${escA(src)}" title="Reproductor de video"
       allowfullscreen scrolling="no"
       allow="autoplay; encrypted-media; fullscreen"
