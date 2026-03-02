@@ -650,6 +650,18 @@
       background: #000; display: flex; align-items: center; justify-content: center;
     }
     .player-body iframe { width: 100%; height: 100%; border: none; display: block; }
+    .direct-player {
+      width: 100%; height: 100%; display: block; background: #000;
+      /* Reset browser default outline / margin */
+      outline: none; margin: 0;
+    }
+    .extract-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: var(--fs-xs); font-weight: 700;
+      color: #4ade80; background: rgba(74,222,128,.12);
+      border-radius: 6px; padding: 2px 8px; margin-left: 6px;
+    }
+    .extract-badge.fallback { color: var(--muted); background: rgba(255,255,255,.06); }
     .player-placeholder {
       color: var(--muted); font-size: var(--fs-base);
       text-align: center; line-height: 2; padding: 24px;
@@ -906,6 +918,7 @@
           <path d="M8 5v14l11-7z"/>
         </svg>
         Episodio
+        <span id="extractBadge" class="extract-badge" style="display:none;"></span>
       </div>
       <div class="server-bar" id="serverBar" role="toolbar"
         aria-label="Servidores de reproducción" aria-live="polite">
@@ -1838,6 +1851,9 @@
   }
 
   function renderServerBar(servers) {
+    // Reset extraction badge
+    var badge = document.getElementById('extractBadge');
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
     document.getElementById('serverBar').innerHTML =
       `<span class="server-label" aria-hidden="true">Servidores</span>` +
       servers.map((s,i) =>
@@ -1856,18 +1872,111 @@
     announce(`Cargando ${el.textContent.trim()}…`);
   }
 
+  var _hlsInstance = null;
+
+  function _initHls(url, video) {
+    if (_hlsInstance) { try { _hlsInstance.destroy(); } catch(e) {} _hlsInstance = null; }
+    if (window.Hls && window.Hls.isSupported()) {
+      _hlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false });
+      _hlsInstance.on(window.Hls.Events.ERROR, function(event, data) {
+        if (data.fatal) {
+          dbgLog('WARN', '[hls] Error fatal: ' + data.type + ' / ' + data.details);
+          // destroy to free resources; player will show native error
+          _hlsInstance.destroy();
+          _hlsInstance = null;
+        }
+      });
+      _hlsInstance.loadSource(url);
+      _hlsInstance.attachMedia(video);
+      _hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, function() {
+        video.play().catch(function() {});
+      });
+    } else {
+      video.src = url;
+    }
+  }
+
+  function _loadHLS(url, video) {
+    if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = url; return; }
+    if (window.Hls) { _initHls(url, video); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';
+    s.onload = function() { _initHls(url, video); };
+    s.onerror = function() { video.src = url; };
+    document.head.appendChild(s);
+  }
+
+  function loadDirectVideo(url, ext, savedSec) {
+    epTimerStop(); // real video events handle tracking
+    var isHLS = ext === 'm3u8' || url.indexOf('.m3u8') !== -1;
+    setPlayerBody('<video id="directPlayer" class="direct-player" controls autoplay playsinline></video>');
+    var video = document.getElementById('directPlayer');
+
+    if (savedSec > 10) {
+      video.addEventListener('loadedmetadata', function() {
+        video.currentTime = savedSec;
+        progressShowToast(savedSec, video.duration || 0);
+      }, { once: true });
+    }
+
+    // Save progress every ~5s
+    var _vidTick = 0;
+    video.addEventListener('timeupdate', function() {
+      _vidTick++;
+      if (_vidTick % 20 !== 0) return; // timeupdate fires ~4x/s → save every ~5s
+      if (!state.animeId || state.episode == null) return;
+      var cur = Math.floor(video.currentTime);
+      var dur = Math.floor(video.duration || 0);
+      if (cur < 2) return;
+      progSave(state.animeId, state.episode, cur, dur);
+      progressUpdateEpGrid();
+      var timerEl = document.getElementById('epTimer');
+      if (timerEl) timerEl.textContent = formatTime(cur);
+    });
+
+    // Route HLS streams through the server proxy to avoid CORS issues with CDN hosts
+    var finalUrl = url;
+    if (isHLS && url.startsWith('http')) {
+      finalUrl = API + '/proxy?url=' + encodeURIComponent(url);
+      dbgLog('INFO', '[player] Usando proxy para HLS: ' + url.slice(0, 70));
+    }
+    if (isHLS) { _loadHLS(finalUrl, video); } else { video.src = finalUrl; }
+  }
+
   function loadServer(s) {
     const src = s.code || s.url || '';
     if (!src) { setPlayerBody('<div class="player-placeholder">No se pudo obtener la URL del servidor.</div>'); return; }
     if (_progSaveTimer) { clearTimeout(_progSaveTimer); _progSaveTimer = null; }
-    // Start wall-clock timer from saved position (if any)
     var savedProg = (state.animeId && state.episode != null) ? progGet(state.animeId, state.episode) : null;
-    epTimerBegin(savedProg ? savedProg.s : 0);
-    setPlayerBody(`<iframe src="${escA(src)}" title="Reproductor de video"
+    var savedSec = savedProg ? savedProg.s : 0;
+
+    setPlayerBody('<div class="player-placeholder"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Extrayendo enlace directo\u2026</div>');
+    dbgLog('INFO', '[extract] Intentando extraer: ' + src.slice(0, 70));
+
+    fetch(API + '/extract?url=' + encodeURIComponent(src))
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data.url) throw new Error('Sin URL en respuesta');
+        var label = '\u25CF Directo' + (data.height ? ' ' + data.height + 'p' : '') + (data.ext ? ' (' + data.ext + ')' : '');
+        dbgLog('OK', '[extract] ' + label + ' \u2014 ' + data.url.slice(0, 70));
+        var badge = document.getElementById('extractBadge');
+        if (badge) { badge.textContent = label; badge.className = 'extract-badge'; badge.style.display = 'inline-flex'; }
+        loadDirectVideo(data.url, data.ext, savedSec);
+      })
+      .catch(function(err) {
+        dbgLog('WARN', '[extract] Fall\u00f3 (' + (err.message || err) + '), usando iframe');
+        var badge = document.getElementById('extractBadge');
+        if (badge) { badge.textContent = 'Iframe'; badge.className = 'extract-badge fallback'; badge.style.display = 'inline-flex'; }
+        epTimerBegin(savedSec);
+        setPlayerBody(`<iframe src="${escA(src)}" title="Reproductor de video"
       allowfullscreen scrolling="no"
       allow="autoplay; encrypted-media; fullscreen"
       sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
     ></iframe>`);
+      });
   }
 
   function setPlayerBody(html) { document.getElementById('playerBody').innerHTML = html; }

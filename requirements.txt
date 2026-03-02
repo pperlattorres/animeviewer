@@ -3,3 +3,5 @@ lxml
 beautifulsoup4
 fastapi
 uvicorn
+requests
+yt-dlp
